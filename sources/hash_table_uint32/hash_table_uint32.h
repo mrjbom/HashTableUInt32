@@ -1,5 +1,5 @@
-#ifndef _UINT32_HASH_TABLE_
-#define _UINT32_HASH_TABLE_
+#ifndef _HASH_TABLE_UINT32_
+#define _HASH_TABLE_UINT32_
 
 /*
  * Hash table implementation designed for keys and values of uint32_t type.

@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\sources">
+      <UniqueIdentifier>{fd828831-fc97-415e-93ce-0715369714ed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sources">
+      <UniqueIdentifier>{1c2ea97c-7856-428b-a5e9-6c8b262edc4c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sources\hash_table_uint32">
+      <UniqueIdentifier>{fbd30a84-2605-4456-89f3-6ebcd586c2e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sources\hash_table_uint32">
+      <UniqueIdentifier>{8ca2f838-9cfc-41a9-b79e-28c15a275027}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sources\hash_table_uint32\murmur_hash3">
+      <UniqueIdentifier>{40a2d7d5-128f-4f99-81e5-201f622df02b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\sources\hash_table_uint32\murmur_hash3">
+      <UniqueIdentifier>{0d207760-284b-4e11-864c-5467d03e3efd}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="sources\main.c">
+      <Filter>Source Files\sources</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\hash_table_uint32\hash_table_uint32.c">
+      <Filter>Source Files\sources\hash_table_uint32</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.c">
+      <Filter>Source Files\sources\hash_table_uint32\murmur_hash3</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="sources\hash_table_uint32\hash_table_uint32.h">
+      <Filter>Header Files\sources\hash_table_uint32</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.h">
+      <Filter>Header Files\sources\hash_table_uint32\murmur_hash3</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
