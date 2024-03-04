@@ -31,6 +31,12 @@
     <Filter Include="Source Files\sources\hash_table_uint32\murmur_hash3">
       <UniqueIdentifier>{0d207760-284b-4e11-864c-5467d03e3efd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\sources\tests">
+      <UniqueIdentifier>{afdc4e8f-0057-4055-af61-9bbbd3b164bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\sources\tests">
+      <UniqueIdentifier>{d0712d12-4568-423d-8f82-5c8e461130b3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="sources\main.c">
@@ -42,6 +48,9 @@
     <ClCompile Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.c">
       <Filter>Source Files\sources\hash_table_uint32\murmur_hash3</Filter>
     </ClCompile>
+    <ClCompile Include="sources\tests\tests.c">
+      <Filter>Source Files\sources\tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\hash_table_uint32\hash_table_uint32.h">
@@ -49,6 +58,9 @@
     </ClInclude>
     <ClInclude Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.h">
       <Filter>Header Files\sources\hash_table_uint32\murmur_hash3</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\tests\tests.h">
+      <Filter>Header Files\sources\tests</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
