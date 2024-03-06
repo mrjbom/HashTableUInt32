@@ -88,7 +88,6 @@ void test_put_and_get()
     // 49:5
     // 8412:6
 
-    // 2 collisions
     key = 12309; value = 7;
     htui32_put(&ht, key, value);
     assert(ht.size == 6);
@@ -102,7 +101,6 @@ void test_put_and_get()
     // 8412:6
     // 12309:7
 
-    // 5 collisions
     key = 3859; value = 8;
     htui32_put(&ht, key, value);
     assert(ht.size == 7);
@@ -117,7 +115,6 @@ void test_put_and_get()
     // 12309:7
     // 3859:8
 
-    // 7 collisions
     key = 38912; value = 9;
     htui32_put(&ht, key, value);
     assert(ht.size == 8);
@@ -132,6 +129,31 @@ void test_put_and_get()
     // 12309:7
     // 3859:8
     // 38912:9
+
+    has_found = htui32_get(&ht, 4875, &value);
+    assert(has_found == true);
+    assert(value == 0);
+    has_found = htui32_get(&ht, 73, &value);
+    assert(has_found == true);
+    assert(value == 3);
+    has_found = htui32_get(&ht, 8923, &value);
+    assert(has_found == true);
+    assert(value == 4);
+    has_found = htui32_get(&ht, 49, &value);
+    assert(has_found == true);
+    assert(value == 5);
+    has_found = htui32_get(&ht, 8412, &value);
+    assert(has_found == true);
+    assert(value == 6);
+    has_found = htui32_get(&ht, 12309, &value);
+    assert(has_found == true);
+    assert(value == 7);
+    has_found = htui32_get(&ht, 3859, &value);
+    assert(has_found == true);
+    assert(value == 8);
+    has_found = htui32_get(&ht, 38912, &value);
+    assert(has_found == true);
+    assert(value == 9);
 
     htui32_destroy(&ht);
 }
@@ -186,5 +208,11 @@ void test_put_and_get_rehash()
     // 4:4
     // 5:5
     // 6:6
+    value = 0;
+    for (uint32_t i = 1; i <= 6; ++i) {
+        bool has_found = htui32_get(&ht, i, &value);
+        assert(has_found == true);
+        assert(value == i);
+    }
     htui32_destroy(&ht);
 }

@@ -19,55 +19,76 @@ static void calculate_rehash_sizes(hash_table_uint32_t* ht_ptr)
 }
 
 /*
- * Finds the position where the key is located
- * Uses quadratic probing
- * Returns true if the key is found, otherwise false
- * pos_ptr can be NULL if you only want to know if an element exists
- * If the key was found in the table, its position will be recorded, otherwise, the value of the space available for recording will be recorded.
- * Thus, the function can be used for both writing and reading.
- * 
- * 0:0 - free for use
- * 0:UINT32_MAX - deleted value
- * The reason why we do not mark it with 0:0
- * is that when searching for a key among collisions when a deleted value is found,
- * we must continue the search, ending it only when 0:0 is encountered.
+ * Searches for the key in the hash table and gets its position.
+ * You can pass NULL to pos_ptr if you only need to find out if it exists.
+ * key must not be 0
+ * Returns true if the key is found and writes its index to the pos.
+ * Returns false if the key is not found.
  */
 static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* pos_ptr)
 {
-
-    // Hash of the key
+    if (key == 0) {
+        return false;
+    }
     uint32_t hash = 0;
-    MurmurHash3_x86_32(&key, sizeof(key), 0, &hash);
+    MurmurHash3_x86_32(&key, sizeof(uint32_t), 0, &hash);
     uint32_t pos = hash % ht_ptr->capacity;
-
-    // Starting the key search using quadratic probing
     uint32_t current_probing_iteration = 0;
     while (true) {
-        // Key has been found?
+        // Is key found?
         if (ht_ptr->memory_ptr[pos].key == key) {
-            if (ht_ptr->memory_ptr[pos].key == 0 && ht_ptr->memory_ptr[pos].value == UINT32_MAX) {
-                // We came across a deleted value, we're moving forward
-                goto do_probing;
-            }
             if (pos_ptr != NULL) {
                 *pos_ptr = pos;
             }
             return true;
         }
-        if (ht_ptr->memory_ptr[pos].key == 0 && ht_ptr->memory_ptr[pos].value == 0) {
-            // It's free pos
-            // The key does not exist, there is no point in looking any further
-            if (pos_ptr != NULL) {
-                *pos_ptr = pos;
-            }
+        // Is this pos marked as deleted?
+        else if (ht_ptr->memory_ptr[pos].key == 0 && ht_ptr->memory_ptr[pos].value == UINT32_MAX) {
+            //We continue the search
+            goto do_probing;
+        }
+        // Is this pos marked as free for use?
+        else if (ht_ptr->memory_ptr[pos].key == 0 && ht_ptr->memory_ptr[pos].value == 0) {
+            // Key not found
             return false;
         }
-        // Do quadratic probing
+        // Use quadratic probing
     do_probing:
+        // If there are no items marked as free for use in the hash table, then we will face an infinite loop
+        if (current_probing_iteration == 1024) {
+            return false;
+        }
         current_probing_iteration++;
-        //printf("[%u] Collision on %u ",current_probing_iteration, pos);
         pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
-        //printf("new pos is %u\n", pos);
+    }
+}
+
+/*
+ * Finds the position marked as free or deleted for key
+ * key must not be 0
+ */
+static void find_free_or_deleted_pos_for_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* pos_ptr)
+{
+    if (ht_ptr->size == ht_ptr->capacity || key == 0) {
+        return;
+    }
+    uint32_t hash = 0;
+    MurmurHash3_x86_32(&key, sizeof(uint32_t), 0, &hash);
+    uint32_t pos = hash % ht_ptr->capacity;
+    uint32_t current_probing_iteration = 0;
+    while (true) {
+        if (ht_ptr->memory_ptr[pos].key == 0) {
+            *pos_ptr = pos;
+            return;
+        }
+        else {
+            goto do_probing;
+        }
+    do_probing:
+        //printf("Collision at %u ", pos);
+        current_probing_iteration++;
+        pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
+        //printf("new pos is %u \n", pos);
     }
 }
 
@@ -116,6 +137,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
         }
         if (ht_ptr->size + 1 < ht_ptr->rehash_max_size) {
             // There is no need to expand the hash table, just put the value
+            find_free_or_deleted_pos_for_key(ht_ptr, key, &pos);
             //printf("Put %u:%u to %u\n", key, value, pos);
             ht_ptr->memory_ptr[pos].key = key;
             ht_ptr->memory_ptr[pos].value = value;
@@ -140,7 +162,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
             for (size_t i = 0; copied_count < ht_ptr->size; ++i) {
                 if (old_memory_ptr[i].key != 0) {
                     // Put item into new hash table
-                    find_pos_by_key(ht_ptr, old_memory_ptr[i].key, &pos);
+                    find_free_or_deleted_pos_for_key(ht_ptr, old_memory_ptr[i].key, &pos);
                     //printf("Rehash put %u:%u to %u\n", old_memory_ptr[i].key, old_memory_ptr[i].value, pos);
                     new_memory_ptr[pos].key = old_memory_ptr[i].key;
                     new_memory_ptr[pos].value = old_memory_ptr[i].value;
@@ -150,7 +172,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
             free_func(old_memory_ptr);
 
             // Put new item to hash table
-            find_pos_by_key(ht_ptr, key, &pos);
+            find_free_or_deleted_pos_for_key(ht_ptr, key, &pos);
             //printf("Put %u:%u to %u\n", key, value, pos);
             new_memory_ptr[pos].key = key;
             new_memory_ptr[pos].value = value;

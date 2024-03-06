@@ -51,7 +51,7 @@ typedef struct {
 extern void htui32_init(hash_table_uint32_t* ht_ptr, size_t capacity, uint8_t load_fac_min, uint8_t load_fac_max);
 
 /*
- * Puts the value by key in the table
+ * Puts value by key in table
  * 
  * ht_ptr - pointer to hash table
  * key - key
@@ -61,7 +61,7 @@ extern void htui32_init(hash_table_uint32_t* ht_ptr, size_t capacity, uint8_t lo
 extern void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value);
 
 /*
- * Gets the value by key from the table
+ * Gets value by key from table
  * Returns true if the value is in the table, otherwise it returns false
  * 
  * ht_ptr - pointer to hash table
@@ -71,7 +71,7 @@ extern void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value
 extern bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr);
 
 /*
- * Frees up the memory allocated for the hash table
+ * Frees up the memory allocated for hash table
  * 
  * ht_ptr - pointer to hash table
  */
