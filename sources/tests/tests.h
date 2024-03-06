@@ -5,4 +5,6 @@ extern void test_put_and_get();
 
 extern void test_put_and_get_rehash();
 
+extern void test_delete();
+
 #endif

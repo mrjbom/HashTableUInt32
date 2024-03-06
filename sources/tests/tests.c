@@ -216,3 +216,70 @@ void test_put_and_get_rehash()
     }
     htui32_destroy(&ht);
 }
+
+void test_delete()
+{
+    hash_table_uint32_t ht;
+    memset(&ht, 0, sizeof(ht));
+    htui32_init(&ht, 2, 0, 75);
+
+    htui32_delete(&ht, 78235);
+    assert(ht.size == 0);
+
+    for (uint32_t i = 1; i <= 8; ++i) {
+        htui32_put(&ht, i, i);
+    }
+    assert(ht.size == 8);
+    assert(ht.capacity == 16);
+    // 1:1
+    // 2:2
+    // 3:3
+    // 4:4
+    // 5:5
+    // 6:6
+    // 7:7
+    // 8:8
+    bool has_found = false;
+    uint32_t key = 0, value = 0;
+    for (uint32_t i = 1; i <= 8; ++i) {
+        has_found = htui32_get(&ht, i, &value);
+        assert(has_found == true);
+        assert(value == i);
+    }
+
+    htui32_delete(&ht, 2);
+    assert(ht.size == 7);
+    has_found = htui32_get(&ht, 2, NULL);
+    assert(has_found == false);
+    htui32_delete(&ht, 5);
+    assert(ht.size == 6);
+    has_found = htui32_get(&ht, 5, NULL);
+    assert(has_found == false);
+    // 1:1
+    // 3:3
+    // 4:4
+    // 6:6
+    // 7:7
+    // 8:8
+    for (uint32_t i = 1; i <= 8; ++i) {
+        value = 0;
+        has_found = htui32_get(&ht, i, &value);
+        if (i == 2) {
+            assert(has_found == false);
+            assert(value == 0);
+            continue;
+        }
+        if (i == 5) {
+            assert(has_found == false);
+            assert(value == 0);
+            continue;
+        }
+        assert(has_found == true);
+        assert(value == i);
+        htui32_delete(&ht, i);
+    }
+    assert(ht.size == 0);
+    assert(ht.capacity == 2);
+
+    htui32_destroy(&ht);
+}

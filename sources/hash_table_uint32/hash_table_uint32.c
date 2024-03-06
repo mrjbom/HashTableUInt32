@@ -2,7 +2,6 @@
 #include "murmur_hash3/murmur_hash3.h"
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #define alloc_func(size) malloc(size)
 #define free_func(ptr) free(ptr)
@@ -44,7 +43,7 @@ static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t*
         }
         // Is this pos marked as deleted?
         else if (ht_ptr->memory_ptr[pos].key == 0 && ht_ptr->memory_ptr[pos].value == UINT32_MAX) {
-            //We continue the search
+            // We continue the search
             goto do_probing;
         }
         // Is this pos marked as free for use?
@@ -55,7 +54,7 @@ static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t*
         // Use quadratic probing
     do_probing:
         // If there are no items marked as free for use in the hash table, then we will face an infinite loop
-        if (current_probing_iteration == 1024) {
+        if (current_probing_iteration == 256) {
             return false;
         }
         current_probing_iteration++;
@@ -86,6 +85,8 @@ static void find_free_or_deleted_pos_for_key(hash_table_uint32_t* ht_ptr, uint32
         }
     do_probing:
         //printf("Collision at %u ", pos);
+        // TODO: This place can potentially lead to long hours of work.
+        // If there is no free space for a long time (for example, when there are too many elements in the table, but only one place is free).
         current_probing_iteration++;
         pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
         //printf("new pos is %u \n", pos);
@@ -99,6 +100,7 @@ void htui32_init(hash_table_uint32_t* ht_ptr, size_t capacity, uint8_t load_fac_
     }
     // Setup default values
     ht_ptr->capacity = (capacity != 0 ? capacity : 4);
+    ht_ptr->initial_capacity = ht_ptr->capacity;
     ht_ptr->size = 0;
     ht_ptr->load_fac_min = (load_fac_min != 0 ? load_fac_min : 25);
     ht_ptr->load_fac_max = (load_fac_max != 0 ? load_fac_max : 75);
@@ -200,6 +202,75 @@ bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr)
     }
     else {
         return has_found;
+    }
+}
+
+void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key)
+{
+    //printf("Delete %u\n", key);
+    /*
+     * TODO: Mark positions not only as deleted, but also as free.
+     * The search for the key in the table goes on until 0:0 is encountered,
+     * if there are too many positions marked as deleted in the table and few/no positions marked as free,
+     * then the search will either take too long or fail altogether.
+     * This is partially solved by rehashing, but it is worth solving it at the stage of deleting an element.
+     */
+
+    if (ht_ptr == NULL || key == 0) {
+        return;
+    }
+    if (ht_ptr->size == 0) {
+        return;
+    }
+    uint32_t pos = 0;
+    if (find_pos_by_key(ht_ptr, key, &pos) == false) {
+        // Key not found
+        return;
+    }
+    else {
+        // Mark pos as deleted
+        ht_ptr->memory_ptr[pos].key = 0;
+        ht_ptr->memory_ptr[pos].value = UINT32_MAX;
+        ht_ptr->size--;
+    }
+    // The element has been deleted, now we may need to reduce the table
+    // The total size of the table cannot be smaller than the initial one
+    if (ht_ptr->capacity == ht_ptr->initial_capacity) {
+        return;
+    }
+    calculate_rehash_sizes(ht_ptr);
+    // Do we need to reduce the table?
+    if (ht_ptr->size > ht_ptr->rehash_min_size) {
+        // We don't need to reduce the table
+        return;
+    }
+    else {
+        // We need to reduce the table
+        // Alloc new memory for hash table
+        //printf("Delete rehash\n");
+        hash_table_uint32_item_t* new_memory_ptr = alloc_func(ht_ptr->memory_size / 2);
+        if (new_memory_ptr == NULL) {
+            return;
+        }
+        ht_ptr->capacity /= 2;
+        ht_ptr->memory_size /= 2;
+        memset(new_memory_ptr, 0, ht_ptr->memory_size);
+        // Copy items from old hash table to new
+        hash_table_uint32_item_t* old_memory_ptr = ht_ptr->memory_ptr;
+        ht_ptr->memory_ptr = new_memory_ptr;
+        size_t copied_count = 0;
+        for (size_t i = 0; copied_count < ht_ptr->size; ++i) {
+            if (old_memory_ptr[i].key != 0) {
+                // Put item into new hash table
+                find_free_or_deleted_pos_for_key(ht_ptr, old_memory_ptr[i].key, &pos);
+                //printf("Rehash put %u:%u to %u\n", old_memory_ptr[i].key, old_memory_ptr[i].value, pos);
+                new_memory_ptr[pos].key = old_memory_ptr[i].key;
+                new_memory_ptr[pos].value = old_memory_ptr[i].value;
+                copied_count++;
+            }
+        }
+        free_func(old_memory_ptr);
+        return;
     }
 }
 

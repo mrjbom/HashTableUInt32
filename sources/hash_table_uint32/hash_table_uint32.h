@@ -21,9 +21,11 @@ typedef struct {
 typedef struct {
     // Total table capacity
     size_t capacity;
+    // The hash table will not shrink to less than this size
+    size_t initial_capacity;
     // Current table size
     size_t size;
-    // Percentage of table load at reaching which its capacity will be increased and rehashing will be performed
+    // Percentage of hash table load at reaching which its capacity will be increased and rehashing will be performed
     uint8_t load_fac_max;
     // Number of elements at which its capacity will be increased and rehashing will be performed
     size_t rehash_max_size;
@@ -44,7 +46,7 @@ typedef struct {
  * Initializes the table
  * 
  * ht_ptr - pointer to hash table
- * capacity - initial total size of the hash table (0 for default value)
+ * capacity - initial total size of the hash table (0 for default value) (The hash table will not shrink to less than this initial capacity!)
  * load_fac_min - percentage of the hash table load, at which its size will decrease and rehashing will be performed (0 for the default value)
  * load_fac_max - percentage of the hash table load, at which its size will increase and rehashing will be performed (0 for the default value)
  */
@@ -66,9 +68,21 @@ extern void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value
  * 
  * ht_ptr - pointer to hash table
  * key - key
+ * ATTENTION: The key 0 are reserved!
  * value_ptr - pointer where the value will be placed, if found. You can use NULL if you only want to know if there is a value in the hash table without getting it.
  */
 extern bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr);
+
+
+/*
+ * Deletes value by key from hash table
+ *
+ * ht_ptr - pointer to hash table
+ * key - key
+ * ATTENTION: The key 0 are reserved!
+ */
+extern void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key);
+
 
 /*
  * Frees up the memory allocated for hash table
