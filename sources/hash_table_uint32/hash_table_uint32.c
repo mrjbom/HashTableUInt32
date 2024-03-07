@@ -18,13 +18,14 @@ static void calculate_rehash_sizes(hash_table_uint32_t* ht_ptr)
 }
 
 /*
- * Searches for the key in the hash table and gets its position.
- * You can pass NULL to pos_ptr if you only need to find out if it exists.
+ * Searches for the key in the hash table and gets its position and the number of iterations of probing passed for the search
+ * You can pass NULL to pos_ptr if you only need to find out if it exists
+ * probing_iterations_number_ptr also can be NULL
  * key must not be 0
  * Returns true if the key is found and writes its index to the pos.
  * Returns false if the key is not found.
  */
-static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* pos_ptr)
+static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* pos_ptr, uint32_t* probing_iterations_number_ptr)
 {
     if (key == 0) {
         return false;
@@ -38,6 +39,9 @@ static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t*
         if (ht_ptr->memory_ptr[pos].key == key) {
             if (pos_ptr != NULL) {
                 *pos_ptr = pos;
+            }
+            if (probing_iterations_number_ptr != NULL) {
+                *probing_iterations_number_ptr = current_probing_iteration;
             }
             return true;
         }
@@ -53,10 +57,6 @@ static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t*
         }
         // Use quadratic probing
     do_probing:
-        // If there are no items marked as free for use in the hash table, then we will face an infinite loop
-        if (current_probing_iteration == 256) {
-            return false;
-        }
         current_probing_iteration++;
         pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
     }
@@ -84,12 +84,12 @@ static void find_free_or_deleted_pos_for_key(hash_table_uint32_t* ht_ptr, uint32
             goto do_probing;
         }
     do_probing:
-        //printf("Collision at %u ", pos);
+        // printf("Collision at %u ", pos);
         // TODO: This place can potentially lead to long hours of work.
         // If there is no free space for a long time (for example, when there are too many elements in the table, but only one place is free).
         current_probing_iteration++;
         pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
-        //printf("new pos is %u \n", pos);
+        // printf("new pos is %u \n", pos);
     }
 }
 
@@ -126,7 +126,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
 
     calculate_rehash_sizes(ht_ptr);
     uint32_t pos = 0;
-    if (find_pos_by_key(ht_ptr, key, &pos) == true) {
+    if (find_pos_by_key(ht_ptr, key, &pos, NULL) == true) {
         // Key is already in the hash table, we don't need to expand the hash table
         // Just only put value
         //printf("Put %u:%u to %u\n", key, value, pos);
@@ -193,7 +193,7 @@ bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr)
         return false;
     }
     uint32_t pos = 0;
-    bool has_found = find_pos_by_key(ht_ptr, key, &pos);
+    bool has_found = find_pos_by_key(ht_ptr, key, &pos, NULL);
     if (has_found) {
         if (value_ptr != NULL) {
             *value_ptr = ht_ptr->memory_ptr[pos].value;
@@ -223,15 +223,25 @@ void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key)
         return;
     }
     uint32_t pos = 0;
-    if (find_pos_by_key(ht_ptr, key, &pos) == false) {
+    if (find_pos_by_key(ht_ptr, key, &pos, NULL) == false) {
         // Key not found
         return;
     }
     else {
+        // Save first pos (before probing)
         // Mark pos as deleted
         ht_ptr->memory_ptr[pos].key = 0;
         ht_ptr->memory_ptr[pos].value = UINT32_MAX;
         ht_ptr->size--;
+
+        // TODO:
+        // If we just mark all deleted items as 0:UINT32_MAX,
+        // then the search for the key may become too long or endless (since it goes until a position with 0:0 is found),
+        // which means that we must mark some deleted positions as 0:0.
+        // For example, in a number of collisions 1:1, 0:UINT32_MAX, 2:2, 0:UINT32_MAX, 3:3, when deleting a 3:3 key, mark it and the collision before it as 0:0
+        // But by deleting the 2:2 element, we cannot mark it as 0:0, because this will break the chain of collisions
+        // Thus, if we delete the last element in the collision chain, then we must mark it and all deleted positions before it as free for use
+
     }
     // The element has been deleted, now we may need to reduce the table
     // The total size of the table cannot be smaller than the initial one

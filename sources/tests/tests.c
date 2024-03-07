@@ -88,6 +88,7 @@ void test_put_and_get()
     // 49:5
     // 8412:6
 
+    // 3 collisions
     key = 12309; value = 7;
     htui32_put(&ht, key, value);
     assert(ht.size == 6);
@@ -101,6 +102,7 @@ void test_put_and_get()
     // 8412:6
     // 12309:7
 
+    // 5 collisions
     key = 3859; value = 8;
     htui32_put(&ht, key, value);
     assert(ht.size == 7);
@@ -115,6 +117,7 @@ void test_put_and_get()
     // 12309:7
     // 3859:8
 
+    // 7 collisions
     key = 38912; value = 9;
     htui32_put(&ht, key, value);
     assert(ht.size == 8);
