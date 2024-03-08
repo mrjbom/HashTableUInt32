@@ -57,8 +57,10 @@ static bool find_pos_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t*
         }
         // Use quadratic probing
     do_probing:
+        printf("Collision at %u ", pos);
         current_probing_iteration++;
         pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
+        printf("new pos is %u \n", pos);
     }
 }
 
@@ -84,12 +86,12 @@ static void find_free_or_deleted_pos_for_key(hash_table_uint32_t* ht_ptr, uint32
             goto do_probing;
         }
     do_probing:
-        // printf("Collision at %u ", pos);
+        printf("Collision at %u ", pos);
         // TODO: This place can potentially lead to long hours of work.
         // If there is no free space for a long time (for example, when there are too many elements in the table, but only one place is free).
         current_probing_iteration++;
         pos = (pos + (current_probing_iteration * current_probing_iteration)) % ht_ptr->capacity;
-        // printf("new pos is %u \n", pos);
+        printf("new pos is %u \n", pos);
     }
 }
 
@@ -129,7 +131,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
     if (find_pos_by_key(ht_ptr, key, &pos, NULL) == true) {
         // Key is already in the hash table, we don't need to expand the hash table
         // Just only put value
-        //printf("Put %u:%u to %u\n", key, value, pos);
+        printf("Put %u:%u to %u\n", key, value, pos);
         ht_ptr->memory_ptr[pos].value = value;
         return;
     }
@@ -140,7 +142,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
         if (ht_ptr->size + 1 < ht_ptr->rehash_max_size) {
             // There is no need to expand the hash table, just put the value
             find_free_or_deleted_pos_for_key(ht_ptr, key, &pos);
-            //printf("Put %u:%u to %u\n", key, value, pos);
+            printf("Put %u:%u to %u\n", key, value, pos);
             ht_ptr->memory_ptr[pos].key = key;
             ht_ptr->memory_ptr[pos].value = value;
             ht_ptr->size++;
@@ -149,7 +151,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
         else {
             // Need expand and rehash hash table
             // Alloc new memory for hash table
-            //printf("Put rehash\n");
+            printf("Put rehash\n");
             hash_table_uint32_item_t* new_memory_ptr = alloc_func(ht_ptr->memory_size * 2);
             if (new_memory_ptr == NULL) {
                 return;
@@ -165,7 +167,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
                 if (old_memory_ptr[i].key != 0) {
                     // Put item into new hash table
                     find_free_or_deleted_pos_for_key(ht_ptr, old_memory_ptr[i].key, &pos);
-                    //printf("Rehash put %u:%u to %u\n", old_memory_ptr[i].key, old_memory_ptr[i].value, pos);
+                    printf("Rehash put %u:%u to %u\n", old_memory_ptr[i].key, old_memory_ptr[i].value, pos);
                     new_memory_ptr[pos].key = old_memory_ptr[i].key;
                     new_memory_ptr[pos].value = old_memory_ptr[i].value;
                     copied_count++;
@@ -175,7 +177,7 @@ void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
 
             // Put new item to hash table
             find_free_or_deleted_pos_for_key(ht_ptr, key, &pos);
-            //printf("Put %u:%u to %u\n", key, value, pos);
+            printf("Put %u:%u to %u\n", key, value, pos);
             new_memory_ptr[pos].key = key;
             new_memory_ptr[pos].value = value;
             ht_ptr->size++;
@@ -223,17 +225,15 @@ void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key)
         return;
     }
     uint32_t pos = 0;
-    if (find_pos_by_key(ht_ptr, key, &pos, NULL) == false) {
+    uint32_t probing_iteration_number = 0;
+    if (find_pos_by_key(ht_ptr, key, &pos, &probing_iteration_number) == false) {
         // Key not found
         return;
     }
     else {
-        // Save first pos (before probing)
-        // Mark pos as deleted
+        printf("Mark pos %u (key %u) as deleted\n", pos, key);
         ht_ptr->memory_ptr[pos].key = 0;
         ht_ptr->memory_ptr[pos].value = UINT32_MAX;
-        ht_ptr->size--;
-
         // TODO:
         // If we just mark all deleted items as 0:UINT32_MAX,
         // then the search for the key may become too long or endless (since it goes until a position with 0:0 is found),
@@ -242,6 +242,96 @@ void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key)
         // But by deleting the 2:2 element, we cannot mark it as 0:0, because this will break the chain of collisions
         // Thus, if we delete the last element in the collision chain, then we must mark it and all deleted positions before it as free for use
 
+        // Is last in collision chain?
+
+        // TODO: This code does not work correctly, it incorrectly finds out whether the item is the last in the collision chain
+
+        ///*
+        uint32_t next_item_pos = (pos + ((probing_iteration_number + 1) * (probing_iteration_number + 1))) % ht_ptr->capacity;
+        bool is_last_in_collision_chain = false;
+        if (ht_ptr->memory_ptr[next_item_pos].key == 0 && ht_ptr->memory_ptr[next_item_pos].value == 0) {
+            is_last_in_collision_chain = true;
+        }
+        else if (ht_ptr->memory_ptr[next_item_pos].key == 0 && ht_ptr->memory_ptr[next_item_pos].value == UINT32_MAX) {
+            is_last_in_collision_chain = false;
+        }
+        else {
+            // We have encountered a certain element, we need to check whether it is part of this chain of collisions or stands after it
+            uint32_t deleted_item_hash = 0;
+            MurmurHash3_x86_32(&key, sizeof(uint32_t), 0, &deleted_item_hash);
+            uint32_t deleted_item_hash_pos = deleted_item_hash % ht_ptr->capacity;
+
+            uint32_t next_item_hash = 0;
+            MurmurHash3_x86_32(&ht_ptr->memory_ptr[next_item_pos].key, sizeof(uint32_t), 0, &next_item_hash);
+            uint32_t next_item_hash_pos = next_item_hash % ht_ptr->capacity;
+            // Is the element being deleted and the next item it in the same collision chain?
+            if (next_item_hash_pos == deleted_item_hash_pos) {
+                is_last_in_collision_chain = false;
+            }
+            else {
+                is_last_in_collision_chain = true;
+            }
+        }
+        if (is_last_in_collision_chain) {
+            // Is last in collision chain
+            // Mark as free for use
+            printf("Mark pos %u (key %u) as free\n", pos, key);
+            ht_ptr->memory_ptr[pos].key = 0;
+            ht_ptr->memory_ptr[pos].value = 0;
+            ht_ptr->size--;
+            
+            // We have items before?
+            if (probing_iteration_number > 0) {
+                // Now we must mark all deleted items before as free, because there is no need now
+                probing_iteration_number--;
+                while (probing_iteration_number > 0) {
+                    uint32_t current_pos = (pos + (probing_iteration_number * probing_iteration_number)) % ht_ptr->capacity;
+                    // Is deleted item?
+                    if (ht_ptr->memory_ptr[current_pos].key == 0 && ht_ptr->memory_ptr[current_pos].value == UINT32_MAX) {
+                        // Mark as free for use
+                        printf("Mark pos %u as free\n", current_pos);
+                        ht_ptr->memory_ptr[current_pos].key = 0;
+                        ht_ptr->memory_ptr[current_pos].value = 0;
+                        // Check item before current
+                        uint32_t before_pos = (pos + ((probing_iteration_number - 1) * (probing_iteration_number - 1))) % ht_ptr->capacity;
+                        // Is deleted?
+                        if (ht_ptr->memory_ptr[before_pos].key == 0 && ht_ptr->memory_ptr[before_pos].value == UINT32_MAX) {
+                            // Mark as free
+                            printf("Mark pos %u as free\n", before_pos);
+                            ht_ptr->memory_ptr[before_pos].key = 0;
+                            ht_ptr->memory_ptr[before_pos].value = 0;
+                            // Go to next item
+                            --probing_iteration_number;
+                        }
+                        else if (ht_ptr->memory_ptr[before_pos].key == 0 && ht_ptr->memory_ptr[before_pos].value == 0) {
+                            printf("BUG!!!\n");
+                            break;
+                        }
+                        else {
+                            // If it's not a deleted item, then it's a valid item in collision chain, we're done
+                            break;
+                        }
+                    }
+                    else if (ht_ptr->memory_ptr[current_pos].key == 0 && ht_ptr->memory_ptr[current_pos].value == 0) {
+                        printf("BUG!!!\n");
+                        break;
+                    }
+                    else {
+                        // If it's not a deleted item, then it's a valid item in collision chain, we're done
+                        break;
+                    }
+                }
+            }
+        }
+        else {
+            // Not last in collision chain
+            // Mark pos as deleted
+            printf("Mark pos %u (key %u) as deleted\n", pos, key);
+            ht_ptr->memory_ptr[pos].key = 0;
+            ht_ptr->memory_ptr[pos].value = UINT32_MAX;
+            ht_ptr->size--;
+        }
+        //*/
     }
     // The element has been deleted, now we may need to reduce the table
     // The total size of the table cannot be smaller than the initial one

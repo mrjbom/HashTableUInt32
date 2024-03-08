@@ -242,6 +242,29 @@ void test_delete()
     // 6:6
     // 7:7
     // 8:8
+
+    // 0 0:0
+    // 1 3:3
+    // 2 7:7
+    // 3 6:6
+    // 4 0:0
+    // 5 0:0
+    // 6 8:8
+    // 7 4:4
+    // 8 0:0
+    // 9 0:0
+    // 10 1:1
+    // 11 0:0
+    // 12 0:0
+    // 13 0:0
+    // 14 5:5
+    // 15 2:2
+
+    // Collision chains:
+    // (6:6): 14 15 3
+    // (7:7): 1 2
+    // (8:8): 1 2 6
+
     bool has_found = false;
     uint32_t key = 0, value = 0;
     for (uint32_t i = 1; i <= 8; ++i) {
@@ -250,20 +273,41 @@ void test_delete()
         assert(value == i);
     }
 
+    // TODO: PROBLEM HEHE!
+    // THIS call mark pos 15 as free for use and break collision chain for 6:6
     htui32_delete(&ht, 2);
     assert(ht.size == 7);
     has_found = htui32_get(&ht, 2, NULL);
     assert(has_found == false);
+
+    // Failed
+    has_found = htui32_get(&ht, 6, NULL);
+    assert(has_found == true);
+
     htui32_delete(&ht, 5);
     assert(ht.size == 6);
     has_found = htui32_get(&ht, 5, NULL);
     assert(has_found == false);
+
     // 1:1
     // 3:3
     // 4:4
     // 6:6
     // 7:7
     // 8:8
+
+    // 0 0:0
+    // 1 3:3
+    // 2 7:7
+    // 3 6:6
+    // 4 0:0
+    // 5 8:8
+    // 6 4:4
+    // 7 0:0
+    // 8 0:0
+    // 9 1:1
+    // 10-14 0:0
+
     for (uint32_t i = 1; i <= 8; ++i) {
         value = 0;
         has_found = htui32_get(&ht, i, &value);

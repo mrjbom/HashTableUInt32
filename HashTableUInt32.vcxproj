@@ -21,12 +21,13 @@
   <ItemGroup>
     <ClCompile Include="sources\hash_table_uint32\hash_table_uint32.c" />
     <ClCompile Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.c" />
-    <ClCompile Include="sources\main.c" />
+    <ClCompile Include="sources\main.cpp" />
     <ClCompile Include="sources\tests\tests.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\hash_table_uint32\hash_table_uint32.h" />
     <ClInclude Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.h" />
+    <ClInclude Include="sources\tests\random_test.hpp" />
     <ClInclude Include="sources\tests\tests.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

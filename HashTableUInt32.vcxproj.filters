@@ -39,7 +39,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sources\main.c">
+    <ClCompile Include="sources\main.cpp">
       <Filter>Source Files\sources</Filter>
     </ClCompile>
     <ClCompile Include="sources\hash_table_uint32\hash_table_uint32.c">
@@ -61,6 +61,9 @@
     </ClInclude>
     <ClInclude Include="sources\tests\tests.h">
       <Filter>Header Files\sources\tests</Filter>
+    </ClInclude>
+    <ClInclude Include="sources\tests\random_test.hpp">
+      <Filter>Source Files\sources\tests</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
