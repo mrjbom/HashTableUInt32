@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClCompile Include="sources\hash_table_uint32\hash_table_uint32.c" />
     <ClCompile Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.c" />
-    <ClCompile Include="sources\main.c" />
+    <ClCompile Include="sources\main.cpp" />
     <ClCompile Include="sources\tests\tests.c" />
   </ItemGroup>
   <ItemGroup>
