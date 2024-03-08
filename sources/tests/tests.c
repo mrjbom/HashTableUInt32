@@ -273,7 +273,7 @@ void test_delete()
         assert(value == i);
     }
 
-    // TODO: PROBLEM HEHE!
+    // TODO: PROBLEM HERE!
     // THIS call mark pos 15 as free for use and break collision chain for 6:6
     htui32_delete(&ht, 2);
     assert(ht.size == 7);
