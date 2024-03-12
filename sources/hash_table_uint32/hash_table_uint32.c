@@ -62,6 +62,92 @@ static bool find_item_by_key(hash_table_uint32_t* ht_ptr, uint32_t key, hash_tab
     return false;
 }
 
+static void check_and_grow_rehash(hash_table_uint32_t* ht_ptr)
+{
+    calculate_rehash_sizes(ht_ptr);
+    if (ht_ptr->size + 1 >= ht_ptr->rehash_max_size) {
+        // Alloc new memory
+        hash_table_uint32_item_t* new_memory = alloc_func((ht_ptr->capacity * 2) * sizeof(hash_table_uint32_item_t));
+        if (new_memory == NULL) {
+            return;
+        }
+        hash_table_uint32_item_t* old_memory = ht_ptr->memory_ptr;
+        size_t old_capacity = ht_ptr->capacity;
+        ht_ptr->capacity = old_capacity * 2;
+        ht_ptr->memory_ptr = new_memory;
+        ht_ptr->memory_size *= 2;
+        ht_ptr->size = 0;
+        memset(ht_ptr->memory_ptr, 0, ht_ptr->memory_size);
+        // Copy items to new hash table
+        for (size_t i = 0; i < old_capacity; ++i) {
+            // Going through all the elements in the current collision chain
+            hash_table_uint32_item_t* current_item = &old_memory[i];
+            hash_table_uint32_item_t* next_item = old_memory[i].next;
+            while (current_item != NULL) {
+                if (current_item->key != 0) {
+                    htui32_put(ht_ptr, current_item->key, current_item->value);
+                    // Free memory allocated for the collision chain element (but not for the first one)
+                    if (current_item != &old_memory[i]) {
+                        free_func(current_item);
+                    }
+                }
+                current_item = next_item;
+                if (current_item != NULL) {
+                    next_item = current_item->next;
+                }
+            }
+        }
+        if (ht_ptr->zero_key_is_used) {
+            ht_ptr->size++;
+        }
+        free_func(old_memory);
+    }
+    calculate_rehash_sizes(ht_ptr);
+}
+
+static void check_and_shrink_rehash(hash_table_uint32_t* ht_ptr)
+{
+    calculate_rehash_sizes(ht_ptr);
+    if (ht_ptr->size <= ht_ptr->rehash_min_size) {
+        if (ht_ptr->capacity / 2 < ht_ptr->initial_capacity) {
+            return;
+        }
+        // Alloc new memory
+        hash_table_uint32_item_t* new_memory = alloc_func((ht_ptr->capacity / 2) * sizeof(hash_table_uint32_item_t));
+        if (new_memory == NULL) {
+            return;
+        }
+        hash_table_uint32_item_t* old_memory = ht_ptr->memory_ptr;
+        size_t old_capacity = ht_ptr->capacity;
+        ht_ptr->capacity = old_capacity / 2;
+        ht_ptr->memory_ptr = new_memory;
+        ht_ptr->memory_size /= 2;
+        ht_ptr->size = 0;
+        memset(ht_ptr->memory_ptr, 0, ht_ptr->memory_size);
+        // Copy items to new hash table
+        for (size_t i = 0; i < old_capacity; ++i) {
+            // Going through all the elements in the current collision chain
+            hash_table_uint32_item_t* current_item = &old_memory[i];
+            hash_table_uint32_item_t* next_item = old_memory[i].next;
+            while (current_item != NULL) {
+                if (current_item->key != 0) {
+                    htui32_put(ht_ptr, current_item->key, current_item->value);
+                    // Free memory allocated for the collision chain element (but not for the first one)
+                    if (current_item != &old_memory[i]) {
+                        free_func(current_item);
+                    }
+                }
+                current_item = next_item;
+                if (current_item != NULL) {
+                    next_item = current_item->next;
+                }
+            }
+        }
+        free_func(old_memory);
+    }
+    calculate_rehash_sizes(ht_ptr);
+}
+
 void htui32_init(hash_table_uint32_t* ht_ptr, size_t capacity, uint8_t load_fac_min, uint8_t load_fac_max)
 {
     if (ht_ptr == NULL || load_fac_max > 100) {
@@ -89,104 +175,71 @@ void htui32_init(hash_table_uint32_t* ht_ptr, size_t capacity, uint8_t load_fac_
 
 void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value)
 {
-    if (ht_ptr == NULL) {
-        return;
-    }
-    if (ht_ptr->capacity == 0) {
+    if (ht_ptr == NULL || ht_ptr->capacity == 0) {
         return;
     }
 
     if (key == 0) {
-        ht_ptr->zero_key_is_used = true;
-        ht_ptr->zero_key_value = value;
-    }
-
-    // Try to find key in hash table
-    hash_table_uint32_item_t* item = NULL;
-    if (find_item_by_key(ht_ptr, key, &item, NULL, NULL)) {
-        // Key is in hash table
-        // Write value
-        item->value = value;
-        return;
-    }
-    else {
-        // Key not in hash table and we need to add new item
-        calculate_rehash_sizes(ht_ptr);
-        // Do we need to rehash hash table?
-        if (ht_ptr->size + 1 >= ht_ptr->rehash_max_size) {
-            // Yes, we need
-            // Do rehash
-            // Alloc new memory
-            hash_table_uint32_item_t* new_memory = alloc_func((ht_ptr->capacity * 2) * sizeof(hash_table_uint32_item_t));
-            if (new_memory == NULL) {
-                return;
-            }
-            hash_table_uint32_item_t* old_memory = ht_ptr->memory_ptr;
-            size_t old_capacity = ht_ptr->capacity;
-            ht_ptr->capacity = old_capacity * 2;
-            ht_ptr->memory_ptr = new_memory;
-            ht_ptr->memory_size *= 2;
-            ht_ptr->size = 0;
-            memset(ht_ptr->memory_ptr, 0, ht_ptr->memory_size);
-            // Copy items to new hash table
-            for (size_t i = 0; i < old_capacity; ++i) {
-                // Going through all the elements in the current collision chain
-                hash_table_uint32_item_t* current_item = &old_memory[i];
-                hash_table_uint32_item_t* next_item = old_memory[i].next;
-                while (current_item != NULL) {
-                    if (current_item->key != 0) {
-                        htui32_put(ht_ptr, current_item->key, current_item->value);
-                        // Free memory allocated for the collision chain element (but not for the first one)
-                        if (current_item != &old_memory[i]) {
-                            free_func(current_item);
-                        }
-                    }
-                    current_item = next_item;
-                    if (current_item != NULL) {
-                        next_item = current_item->next;
-                    }
-                }
-            }
-            free_func(old_memory);
-            // Rehash complited
-        }
-        // Put new item
-        uint32_t hash = 0;
-        MurmurHash3_x86_32(&key, sizeof(key), 0, &hash);
-        uint32_t pos = hash % ht_ptr->capacity;
-        // Is this position is free?
-        if (ht_ptr->memory_ptr[pos].key == 0) {
-            // Just put the key and value
-            ht_ptr->memory_ptr[pos].key = key;
-            ht_ptr->memory_ptr[pos].value = value;
+        if (ht_ptr->zero_key_is_used) {
+            ht_ptr->zero_key_value = value;
+            return;
         }
         else {
-            // The position is used, which means we have to add a new item to collision chain
-            // Find last item in collision chain
-            hash_table_uint32_item_t* last_item = &ht_ptr->memory_ptr[pos];
-            while (last_item->next != NULL) {
-                last_item = last_item->next;
-            }
-            // Add new item to collision chain
-            hash_table_uint32_item_t* new_item = alloc_func(sizeof(hash_table_uint32_item_t));
-            if (new_item == NULL) {
-                return;
-            }
-            new_item->key = key;
-            new_item->value = value;
-            new_item->next = NULL;
-            last_item->next = new_item;
+            check_and_grow_rehash(ht_ptr);
+            ht_ptr->zero_key_is_used = true;
+            ht_ptr->zero_key_value = value;
+            ht_ptr->size++;
         }
-        ht_ptr->size++;
+    }
+    else {
+        // Try to find key in hash table
+        hash_table_uint32_item_t* item = NULL;
+        if (find_item_by_key(ht_ptr, key, &item, NULL, NULL)) {
+            // Key is in hash table
+            // Write value
+            item->value = value;
+            return;
+        }
+        else {
+            // Key not in hash table and we need to add new item
+            // Rehash?
+            check_and_grow_rehash(ht_ptr);
+            ht_ptr->size++;
+            // Put new item
+            uint32_t hash = 0;
+            MurmurHash3_x86_32(&key, sizeof(key), 0, &hash);
+            uint32_t pos = hash % ht_ptr->capacity;
+            //printf("Put %u in pos %u\n", key, pos);
+            // Is this position is free?
+            if (ht_ptr->memory_ptr[pos].key == 0) {
+                // Just put the key and value
+                ht_ptr->memory_ptr[pos].key = key;
+                ht_ptr->memory_ptr[pos].value = value;
+            }
+            else {
+                // The position is used, which means we have to add a new item to collision chain
+                // Find last item in collision chain
+                hash_table_uint32_item_t* last_item = &ht_ptr->memory_ptr[pos];
+                while (last_item->next != NULL) {
+                    last_item = last_item->next;
+                }
+                // Add new item to collision chain
+                hash_table_uint32_item_t* new_item = alloc_func(sizeof(hash_table_uint32_item_t));
+                if (new_item == NULL) {
+                    return;
+                }
+                new_item->key = key;
+                new_item->value = value;
+                new_item->next = NULL;
+                last_item->next = new_item;
+            }
+        }
     }
 }
 
 bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr)
 {
-    if (ht_ptr == NULL) {
-        return false;
-    }
-    if (ht_ptr->size == 0) {
+    if (ht_ptr == NULL || ht_ptr->size == 0) {
         return false;
     }
 
@@ -201,23 +254,62 @@ bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr)
             return false;
         }
     }
-
-    hash_table_uint32_item_t* item = NULL;
-    // Key in hash table?
-    if (find_item_by_key(ht_ptr, key, &item, NULL, NULL) == true) {
-        if (value_ptr != NULL) {
-            *value_ptr = item->value;
-        }
-        return true;
-    }
     else {
-        return false;
+        hash_table_uint32_item_t* item = NULL;
+        // Key in hash table?
+        if (find_item_by_key(ht_ptr, key, &item, NULL, NULL) == true) {
+            if (value_ptr != NULL) {
+                *value_ptr = item->value;
+            }
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 }
 
 void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key)
 {
-    
+    if (ht_ptr == NULL || ht_ptr->size == 0) {
+        return;
+    }
+
+    if (key == 0) {
+        if (ht_ptr->zero_key_is_used) {
+            ht_ptr->zero_key_is_used = false;
+            ht_ptr->zero_key_value = 0;
+            ht_ptr->size--;
+        }
+        else {
+            return;
+        }
+    }
+    else {
+        // Try to find key in hash table
+        hash_table_uint32_item_t* item = NULL;
+        hash_table_uint32_item_t* prev_item = NULL;
+        hash_table_uint32_item_t* next_item = NULL;
+        if (find_item_by_key(ht_ptr, key, &item, &prev_item, &next_item)) {
+            // Is first in collision chain?
+            if (prev_item == NULL) {
+                // Clear key and value
+                item->key = 0;
+                item->value = 0;
+            }
+            else {
+                prev_item->next = next_item;
+                free_func(item);
+            }
+            ht_ptr->size--;
+        }
+        else {
+            return;
+        }
+    }
+
+    // Rehash?
+    check_and_shrink_rehash(ht_ptr);
 }
 
 void htui32_destroy(hash_table_uint32_t* ht_ptr)
