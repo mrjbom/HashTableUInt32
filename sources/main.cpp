@@ -8,13 +8,13 @@ extern "C" { void test_delete(); }
 
 int main(void)
 {
-    //printf("test_put_and_get()\n");
-    //test_put_and_get();
-    //printf("test_put_and_get_rehash()\n");
-    //test_put_and_get_rehash();
+    printf("test_put_and_get()\n");
+    test_put_and_get();
+    printf("test_put_and_get_rehash()\n");
+    test_put_and_get_rehash();
     //printf("test_delete()\n");
     //test_delete();
-    printf("test_random()\n");
-    test_random();
+    //printf("test_random()\n");
+    //test_random();
     return 0;
 }

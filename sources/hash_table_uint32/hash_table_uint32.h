@@ -5,15 +5,16 @@
  * Hash table implementation designed for keys and values of uint32_t type.
  * It is oriented to use in my SLAB allocator in TEUOS instead of usual applications.
  * 
- * Hash table with open addressing.
+ * Hash table with separate chaining.
  * Uses MurmurHash3 as a hash function.
- * Uses quadratic probing to resolve collisions.
  */
 
 #include <stdint.h>
 #include <stdbool.h>
 
-typedef struct {
+typedef struct hash_table_uint32_item {
+    // Pointer to the next structure in the collision chain, used as sllist_node_t by sllist.h
+    struct hash_table_uint32_item* next;
     uint32_t key;
     uint32_t value;
 } hash_table_uint32_item_t;
@@ -38,6 +39,11 @@ typedef struct {
     hash_table_uint32_item_t* memory_ptr;
     // Current table size in bytes
     size_t memory_size;
+
+    // Indicates whether the table contains the key 0
+    bool zero_key_is_used;
+    // The key value 0 is not stored in the table like regular keys, it is stored in this variable
+    uint32_t zero_key_value;
 } hash_table_uint32_t;
 
 // Short names for functions
@@ -54,32 +60,28 @@ extern void htui32_init(hash_table_uint32_t* ht_ptr, size_t capacity, uint8_t lo
 
 /*
  * Puts value by key in table
- * 
+ *
  * ht_ptr - pointer to hash table
  * key - key
  * value - value
- * ATTENTION: The key 0 are reserved!
  */
 extern void htui32_put(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t value);
 
 /*
  * Gets value by key from table
  * Returns true if the value is in the table, otherwise it returns false
- * 
+ *
  * ht_ptr - pointer to hash table
  * key - key
- * ATTENTION: The key 0 are reserved!
  * value_ptr - pointer where the value will be placed, if found. You can use NULL if you only want to know if there is a value in the hash table without getting it.
  */
 extern bool htui32_get(hash_table_uint32_t* ht_ptr, uint32_t key, uint32_t* value_ptr);
-
 
 /*
  * Deletes value by key from hash table
  *
  * ht_ptr - pointer to hash table
  * key - key
- * ATTENTION: The key 0 are reserved!
  */
 extern void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key);
 
@@ -90,5 +92,17 @@ extern void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key);
  * ht_ptr - pointer to hash table
  */
 extern void htui32_destroy(hash_table_uint32_t* ht_ptr);
+
+/*
+ * Prints the internal representation of the hash table
+ * for example:
+ * [0]: (key:value) (key:value)
+ * [2]: (key:value)
+ * [3]: (key:value) (key:value) (key:value)
+ * [7]: (key:value)
+ * 
+ * ht_ptr - pointer to hash table
+ */
+extern void htui32_print_iternal_rep(hash_table_uint32_t* ht_ptr);
 
 #endif

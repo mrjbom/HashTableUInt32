@@ -39,9 +39,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="sources\main.c">
-      <Filter>Source Files\sources</Filter>
-    </ClCompile>
     <ClCompile Include="sources\hash_table_uint32\hash_table_uint32.c">
       <Filter>Source Files\sources\hash_table_uint32</Filter>
     </ClCompile>
@@ -50,6 +47,9 @@
     </ClCompile>
     <ClCompile Include="sources\tests\tests.c">
       <Filter>Source Files\sources\tests</Filter>
+    </ClCompile>
+    <ClCompile Include="sources\main.cpp">
+      <Filter>Source Files\sources</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
