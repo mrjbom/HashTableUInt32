@@ -26,6 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sources\hash_table_uint32\hash_table_uint32.h" />
+    <ClInclude Include="sources\hash_table_uint32\hash_table_uint32_cpp.h" />
     <ClInclude Include="sources\hash_table_uint32\murmur_hash3\murmur_hash3.h" />
     <ClInclude Include="sources\tests\tests.h" />
   </ItemGroup>

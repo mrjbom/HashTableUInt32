@@ -14,7 +14,7 @@ int main(void)
     test_put_and_get_rehash();
     printf("test_delete()\n");
     test_delete();
-    //printf("test_random()\n");
-    //test_random();
+    printf("test_random()\n");
+    test_random();
     return 0;
 }

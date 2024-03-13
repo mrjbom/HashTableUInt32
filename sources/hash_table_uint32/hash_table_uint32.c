@@ -143,6 +143,9 @@ static void check_and_shrink_rehash(hash_table_uint32_t* ht_ptr)
                 }
             }
         }
+        if (ht_ptr->zero_key_is_used) {
+            ht_ptr->size++;
+        }
         free_func(old_memory);
     }
     calculate_rehash_sizes(ht_ptr);
@@ -280,6 +283,7 @@ void htui32_delete(hash_table_uint32_t* ht_ptr, uint32_t key)
             ht_ptr->zero_key_is_used = false;
             ht_ptr->zero_key_value = 0;
             ht_ptr->size--;
+            check_and_shrink_rehash(ht_ptr);
         }
         else {
             return;
@@ -337,6 +341,8 @@ void htui32_print_iternal_rep(hash_table_uint32_t* ht_ptr)
     if (ht_ptr == NULL) {
         return;
     }
+
+    printf("%u %u\n", ht_ptr->size, ht_ptr->capacity);
 
     if (ht_ptr->zero_key_is_used) {
         printf("(0:%u)\n", ht_ptr->zero_key_value);

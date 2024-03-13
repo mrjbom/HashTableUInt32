@@ -62,5 +62,8 @@
     <ClInclude Include="sources\tests\tests.h">
       <Filter>Header Files\sources\tests</Filter>
     </ClInclude>
+    <ClInclude Include="sources\hash_table_uint32\hash_table_uint32_cpp.h">
+      <Filter>Header Files\sources\hash_table_uint32</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
