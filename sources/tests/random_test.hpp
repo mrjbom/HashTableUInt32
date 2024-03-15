@@ -26,7 +26,7 @@ uint32_t actions_min_number = 0;
 uint32_t actions_max_number = 1024;
 
 uint32_t elements_min_number = 0;
-uint32_t elements_max_number = 512;
+uint32_t elements_max_number = 256;
 
 hash_table_uint32_t ht;
 std::map<uint32_t, uint32_t> uint32_map;
